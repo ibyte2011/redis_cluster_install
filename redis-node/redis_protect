@@ -1,0 +1,2 @@
+#!/bin/bash
+/home/mm/redis/redis-node/redis_protect.sh $1 &
