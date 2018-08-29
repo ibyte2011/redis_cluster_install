@@ -1,0 +1,62 @@
+1.pssh -h frag_index_in_bj.host "source /root/.bash_profile; cd /home/mesasoft/frag_index_high_asyn/bin; ./frag_index_cluster_stop.sh"
+2.pssh -h all_bj "killall redis_protect.sh redis-server"
+3.pssh -h all_bj  "cd /home/mesasoft/redis/redis-node/;./run_redis.sh 16"
+3.head -n 35 master_bj >single_master_bj
+4.tail -n 5 master_bj >index_master_bj
+5.head -n 35 slave_bj >single_slave_bj
+6.tail -n 5  slave_bj > index_slave_bj
+7.scp *bj 10.172.64.1:/home/yng/ (10.188.70.1)
+8.编辑cluster_ip.py 指定IP文件
+9.python cluster_ip.py >build_cluster.sh
+10.python makeIP.py 生成index索引IP
+11.pssh -h frag_index_in_bj.host "sed -i
+'s|RedisAlignCluster=10.172.128.28:9001,10.172.128.29:9001,10.172.128.30:9001,10.172.128.31:9001,10.172.128.32:9001,10.172.128.33:9001,10.172.128.209:9001,10.172.128.210:9001,10.172.128.13:9001,10.172.128.226:9001,10.172.128.241:9001,10.172.128.242:9001,10.172.128.41:9001,10.172.128.42:9001,10.172.128.43:9001|RedisAlignCluster=10.172.128.241:9001,10.172.128.242:9001,10.172.128.41:9001,10.172.128.42:9001,10.172.128.43:9001|'
+/home/mesasoft/frag_index_high_asyn/bin/conf/frag_index.conf"
+12.修改telegraf配置 ./ipmake.sh single_master_bj 
+13.killall telegraf_single_r3 telegraf_index_r3 telegraf
+14../telegraf_r2(10.172.64.3)
+13.pssh -h frag_index_in_bj.host "source /root/.bash_profile; cd /home/mesasoft/frag_index_high_asyn/bin; ./frag_index_cluster_start.sh"
+14.python cluster_ip.py  >stat_bj.sh
+15.bash stat_bj.sh
+16.pssh -h frag_index_in_sh.host  -P "netstat -anlp|grep :9001|wc -l"|grep -v SU //看连接数
+17.pssh -h all_bj -t 20 "sed -i 's|16384|65535|g' /home/mesasoft/redis/redis-node/redis_comm.conf"
+18.pssh -h ../slave_bj "echo 65535 >> /proc/sys/net/core/somaxconn"
+19.pssh -h all_sh "echo 65535 >> /proc/sys/net/ipv4/tcp_max_syn_backlog"
+20.pssh -h redis_bs/single_master_sh   -P "netstat -anlp|grep WAI|wc -l"|grep -v SU //看wai情况
+1.commd.py 在线配置集群参数
+2.修改内容  淘汰使用CPU时间改为50%，淘汰key个数由20改为40
+3.客户端修改解析参数功能，添加对管理端口的解析功能,去掉@后面的内
+313ab7ebd34656a1321d2d35beaab0353ac6d424 10.170.31.3:9014@19014 slave 6fb894c7807ede46f6532d43a76b374963091d30 0 1514528821000 1022 connected
+去除@1901
+4.公钥机
+ BJ 10.172.64.1
+ SH 10.180.64.1
+ GZ 10.188.70.1
+5.redis-stat
+  10.180.0.71  111111
+
+
+20180124
+
+上海集群调整
+索引集群更换一个
+10.180.64.82 换成  10.180.64.86
+
+
+single集群更换一个
+10.180.128.9  换成  10.180.64.87
+#CPU
+ pssh -P -h single_master_bj "top -b -n 1 |grep redis-ser|awk '{print \$9}'|head -1"|grep -v SU|awk -F ':' '{if($2>50)print $0}'
+#memory
+pssh -P -h redis_bs/sh/all_sh "top -b -n 1 |grep redis-ser|awk '{print \$6}'|sort -r|head -1"|grep -v SU|grep t
+
+pssh -h all_ip "echo \"* soft nofile 16384\" >> /etc/security/limits.conf"
+pssh -h all_ip "cd /home/mesasoft/frag_rssb;./shutdown.sh;./rssb_maskey_r2"
+
+#find fail node
+redis-cli -h 10.172.64.56 -p 9001 cluster nodes|grep fail
+
+20180208
+change
+
+10.180.128.42 slave  10.178.95.2 网络原因 changeto 10.180.128.9
