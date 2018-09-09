@@ -16,7 +16,7 @@ for((i=1;i<$n;i++));
 do
 	((p=$s+$i))
 	#echo "i value:"$i
-	redis-cli -h $host -p $s -c cluster meet 127.0.0.1 $p >>/dev/null
+	redis-cli -h $host -p $s -c cluster meet $host $p >>/dev/null
 done
 for((i=0;i<$n;i++))
 do
